@@ -114,11 +114,11 @@
                                     <label for="start-date">Start Date *</label>
                                     <input type="date" id="start-date" required min="2022-01-01" max="2032-12-31">
                                 </div>
-                                <div class="form-group">
-                                    <label for="end-date">End Date *</label>
-                                    <input type="date" id="end-date" required min="2022-01-01" max="2032-12-31">
+                                    <div class="form-group">
+                                        <label for="end-date">End Date *</label>
+                                        <input type="date" id="end-date" required min="2022-01-01" max="2032-12-31">
+                                    </div>
                                 </div>
-                            </div>
                             <!-- Health field removed as per request -->
                             <div class="form-group full-width">
                                 <label for="resource-input">Allocate Resources</label>
@@ -266,6 +266,334 @@
                         <button class="cockpit-tab active" data-res-tab="utilization">Utilization</button>
                         <button class="cockpit-tab" data-res-tab="team">Team Overview</button>
                         <button class="cockpit-tab" data-res-tab="skills">Skill Inventory</button>
+
+<button data-res-tab="allocate" class="cockpit-tab">Allocate Resource</button>
+<!-- Allocate Resource Modal -->
+<!-- Allocate Resource Modal -->
+<div id="allocate-resource-modal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h2>Find your Resource</h2>
+      <button class="modal-close" id="modal-allocate-close-btn">×</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="allocate-resource-form">
+
+        <!-- PROJECT + MODEL SECTION -->
+        <h3 class="section-title">Enter Details</h3>
+
+        
+<div class="form-row">
+  <div class="form-group">
+    <label for="alloc-product-name">Product *</label>
+    <select id="alloc-product-name" required></select>
+  </div>
+
+  <div class="form-group">
+    <label for="alloc-project-name">Project Name *</label>
+    <select id="alloc-project-name" required></select>
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label for="alloc-model-id">Model ID *</label>
+    <select id="alloc-model-id" class="searchable" required></select>
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label>Model Type</label>
+    <input type="text" id="alloc-model-type" disabled placeholder="Auto-filled" />
+  </div>
+
+  <div class="form-group">
+    <label>Model Complexity</label>
+    <input type="text" id="alloc-model-complexity" disabled placeholder="Auto-filled" />
+  </div>
+</div>
+
+
+        <!-- ROLE + DATES + HRS -->
+        <h3 class="section-title">Assignment Details</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="alloc-role">Role *</label>
+            <select id="alloc-role" required>
+              <option value="">Select Role</option>
+              <option>DMM</option>
+              <option>DMM/PL</option>
+              <option>Data Analyst</option>
+              <option>Lead</option>
+              <option>Modeler</option>
+              <option>Non MMM</option>
+              <option>PL</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="alloc-hrs">Hours / Week *</label>
+            <input type="number" id="alloc-hrs" placeholder="e.g. 20" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="alloc-start">Start Date *</label>
+            <input type="date" id="alloc-start" required />
+          </div>
+
+          <div class="form-group">
+            <label for="alloc-end">End Date *</label>
+            <input type="date" id="alloc-end" required />
+          </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="form-actions">
+          <button type="button" class="btn-primary" id="btn-get-resource">Get Resources</button>
+        </div>
+
+        <!-- RESOURCE LIST POP AREA -->
+        <div id="resource-results" class="resource-results"></div>
+
+        <!-- Final Allocate Button -->
+        <div class="form-actions" id="allocate-final-wrapper" style="display:none;">
+          <button type="button" class="btn-accent" id="btn-final-allocate">Allocate</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- Allocate Resource Modal wiring ---
+  (function () {
+
+const productSelect = document.getElementById("alloc-product-name");
+
+    
+  const modal = document.getElementById("allocate-resource-modal");
+  const closeBtn = document.getElementById("modal-allocate-close-btn");
+  const projectSelect = document.getElementById("alloc-project-name");
+  const modelSelect = document.getElementById("alloc-model-id");
+  const typeBox = document.getElementById("alloc-model-type");
+  const compBox = document.getElementById("alloc-model-complexity");
+
+  const getResBtn = document.getElementById("btn-get-resource");
+  const resultsDiv = document.getElementById("resource-results");
+  const finalAllocateWrapper = document.getElementById("allocate-final-wrapper");
+  const finalAllocateBtn = document.getElementById("btn-final-allocate");
+
+ function loadProducts() {
+  productSelect.innerHTML = `<option value="">Select Product</option>`;
+
+  const allProjects = appState.data.projects ?? [];
+
+  const products = [...new Set(allProjects.map(p => p.Product))].sort();
+
+  products.forEach(prod => {
+    productSelect.innerHTML += `<option value="${prod}">${prod}</option>`;
+  });
+}
+
+
+  // ---------------------------
+  // OPEN / CLOSE MODAL
+  // ---------------------------
+  document
+    .querySelector('button.cockpit-tab[data-res-tab="allocate"]')
+    ?.addEventListener("click", () => {
+      modal.classList.add("active");
+      loadProducts();
+    });
+
+  closeBtn?.addEventListener("click", () => modal.classList.remove("active"));
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("active");
+  });
+
+  productSelect.addEventListener("change", () => {
+  const selectedProduct = productSelect.value;
+
+  const all = appState.data.projects ?? [];
+
+  // Filter projects belonging to the selected product
+  const filteredProjects = all
+    .filter(p => p.Product === selectedProduct)
+    .map(p => p.Project_Name);
+
+  projectSelect.innerHTML = `<option value="">Select Project</option>`;
+
+  filteredProjects.forEach(name => {
+    projectSelect.innerHTML += `<option value="${name}">${name}</option>`;
+  });
+
+  // Reset downstream fields
+  modelSelect.innerHTML = `<option value="">Select Model</option>`;
+  typeBox.value = "";
+  compBox.value = "";
+});
+
+ 
+
+  // ---------------------------
+  // LOAD PROJECT LIST
+  // ---------------------------
+  function loadProjects() {
+    projectSelect.innerHTML = `<option value="">Select Project</option>`;
+    const all = appState.data.projects ?? [];
+
+    const names = [...new Set(all.map(p => p.Project_Name))].sort();
+
+    names.forEach(n => {
+      projectSelect.innerHTML += `<option value="${n}">${n}</option>`;
+    });
+  }
+
+  // ---------------------------
+  // ON PROJECT SELECT → LOAD MODELS
+  // ---------------------------
+projectSelect.addEventListener("change", () => {
+  const pname = projectSelect.value;
+  const all = appState.data.projects ?? [];
+
+  const models = all
+    .filter(p => p.Project_Name === pname)
+    .flatMap(p => p.models || []);
+
+  modelSelect.innerHTML = `<option value="">Select Model ID</option>`;
+
+  models.forEach(m => {
+    modelSelect.innerHTML += `<option value="${m.Model_ID}">${m.Model_ID}</option>`;
+  });
+
+  typeBox.value = "";
+  compBox.value = "";
+});
+
+  // ---------------------------
+  // ON MODEL SELECT → AUTO-FILL TYPE + COMPLEXITY
+  // ---------------------------
+  modelSelect.addEventListener("change", () => {
+  const pname = projectSelect.value;
+  const mid = modelSelect.value;
+  const all = appState.data.projects ?? [];
+
+  let modelObj = null;
+  let complexityValue = "";
+
+  all.forEach(p => {
+    if (p.Project_Name === pname) {
+      p.models?.forEach(m => {
+        if (m.Model_ID === mid) modelObj = m;
+      });
+      complexityValue = p.Complexity_Type; // from data.json
+    }
+  });
+
+  if (modelObj) {
+    typeBox.value = modelObj.Model_Type || "";
+    compBox.value = complexityValue || "";
+  }
+});
+
+  // ---------------------------
+  // GET RESOURCE LIST
+  // ---------------------------
+  // ---------------------------
+// GET RESOURCE LIST (ROLE FILTERED)
+// ---------------------------
+getResBtn.addEventListener("click", () => {
+
+  const roleNeeded = document.getElementById("alloc-role").value;
+  const hrs = document.getElementById("alloc-hrs").value;
+  const start = document.getElementById("alloc-start").value;
+  const end = document.getElementById("alloc-end").value;
+
+  // Basic validations
+  if (!roleNeeded) {
+    showToast("Please select a Role before fetching resources.");
+    return;
+  }
+  if (!hrs || !start || !end) {
+    showToast("Please fill hours & dates before fetching resources.");
+    return;
+  }
+
+  const allResources = appState.data.resources ?? [];
+
+  // ROLE FILTER — only show resources that match the role input
+  const filtered = allResources.filter(r => r.role === roleNeeded);
+
+  if (filtered.length === 0) {
+    resultsDiv.innerHTML = `
+      <p>No resources found with role "<b>${roleNeeded}</b>".</p>
+    `;
+    finalAllocateWrapper.style.display = "none";
+    return;
+  }
+
+  // Build table UI
+  let html = `<h3>Allocate Resources</h3>`;
+  html += `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Select</th>
+          <th>Name</th>
+          <th>Manager</th>
+          <th>Role</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  filtered.forEach(r => {
+    html += `
+      <tr>
+        <td><input type="radio" name="alloc-res-pick" value="${r.name}" /></td>
+        <td>${r.name}</td>
+        <td>${r.manager || "N/A"}</td>
+        <td>${r.role}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+
+  resultsDiv.innerHTML = html;
+  finalAllocateWrapper.style.display = "none";
+
+  // Show Allocate button after selection
+  resultsDiv.addEventListener("change", () => {
+    if (document.querySelector('input[name="alloc-res-pick"]:checked')) {
+      finalAllocateWrapper.style.display = "flex";
+    }
+  });
+});
+
+
+  // ---------------------------
+  // FINAL ALLOCATE BUTTON
+  // ---------------------------
+  finalAllocateBtn.addEventListener("click", () => {
+
+    const chosen = document.querySelector('input[name="alloc-res-pick"]:checked');
+    if (!chosen) return;
+
+    showToast("Resource allocated succesfully.");
+
+    modal.classList.remove("active");
+  });
+
+})();
+</script>
                     </div>
 
                     <!-- Utilization Sub-View -->
@@ -395,6 +723,7 @@
                             <thead>
                                 <tr>
                                     <th>Project Name</th>
+                                    <th>Project Status</th>
                                     <th>Maconomy ID</th>
                                     <th>Model ID</th>
                                     <th>Model Type</th>
@@ -407,6 +736,11 @@
                                     <th><select id="filter-project-name" class="column-filter">
                                             <option value="">All</option>
                                         </select></th>
+                                        <th>
+  <select id="filter-prodstatus" class="column-filter">
+    <option value="">All</option>
+  </select>
+</th>
                                     <th><select id="filter-maconomy-id" class="column-filter">
                                             <option value="">All</option>
                                         </select></th>
@@ -494,6 +828,7 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- <script src="app.projects-product-patch.js"></script> -->
 </body>
 
 </html>

@@ -1114,6 +1114,7 @@ function renderProjectsView() {
             html += `
                 <tr class="${rowColorClass}">
                     <td><strong>${p.Project_Name}</strong></td>
+                    <td>Confirmed</td>
                     <td><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 11px;">${p.Project_No || 'N/A'}</code></td>
                     <td><code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-size: 11px;">${model.Model_ID || 'N/A'}</code></td>
                     <td><span style="font-size: 11px;">${model.Model_Type || 'N/A'}${model.Model_Stage ? ' (' + model.Model_Stage + ')' : ''}</span></td>
@@ -1131,7 +1132,7 @@ function renderProjectsView() {
 
     const tbody = document.getElementById('projects-list-tbody');
     if (tbody) {
-        tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">No projects found</td></tr>';
+        tbody.innerHTML = html || '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">No projects found</td></tr>';
     }
 }
 
@@ -1956,6 +1957,7 @@ function handleTimelineFilterChange(e) {
 // ====================================
 let columnFilters = {
     projectName: '',
+    product: '',
     maconomyId: '',
     modelId: '',
     modelType: '',
@@ -1967,16 +1969,19 @@ let columnFilters = {
 
 function initColumnFilters() {
     // Add event listeners for each filter
-    const filterIds = [
-        'filter-project-name',
-        'filter-maconomy-id',
-        'filter-model-id',
-        'filter-model-type',
-        'filter-complexity',
-        'filter-start-date',
-        'filter-end-date',
-        'filter-health'
-    ];
+   
+  const filterIds = [
+    'filter-project-name',
++   'filter-product',
+    'filter-maconomy-id',
+    'filter-model-id',
+    'filter-model-type',
+    'filter-complexity',
+    'filter-start-date',
+    'filter-end-date',
+    'filter-health'
+  ];
+
 
     filterIds.forEach(id => {
         const filter = document.getElementById(id);
@@ -1993,19 +1998,26 @@ function populateColumnFilters() {
     const resources = appState.data.resources || [];
 
     // Collect unique values for each column
-    const uniqueValues = {
-        projectNames: new Set(),
-        maconomyIds: new Set(),
-        modelIds: new Set(),
-        modelTypes: new Set(),
-        complexities: new Set(),
-        startDates: new Set(),
-        endDates: new Set(),
-        healthStatuses: new Set()
-    };
+   const uniqueValues = {
+    projectNames: new Set(),
+    products: new Set(),
+    maconomyIds: new Set(),
+    modelIds: new Set(),
+    modelTypes: new Set(),
+    complexities: new Set(),
+    startDates: new Set(),
+    endDates: new Set(),
+    healthStatuses: new Set()
+  };
+  
+      uniqueValues.products.add('Confirmed');
+      
+
 
     projects.forEach(p => {
         if (p.Project_Name) uniqueValues.projectNames.add(p.Project_Name);
+        //  if (p.Product) uniqueValues.products.add(p.Product);
+
         if (p.Project_No) uniqueValues.maconomyIds.add(p.Project_No);
         if (p.Complexity_Type) uniqueValues.complexities.add(p.Complexity_Type);
         if (p.Start_Date) uniqueValues.startDates.add(p.Start_Date);
@@ -2026,6 +2038,7 @@ function populateColumnFilters() {
 
     // Populate each filter dropdown
     populateFilterDropdown('filter-project-name', uniqueValues.projectNames);
+    populateFilterDropdown('filter-product', uniqueValues.products);
     populateFilterDropdown('filter-maconomy-id', uniqueValues.maconomyIds);
     populateFilterDropdown('filter-model-id', uniqueValues.modelIds);
     populateFilterDropdown('filter-model-type', uniqueValues.modelTypes);
@@ -2064,6 +2077,7 @@ function handleColumnFilterChange() {
     columnFilters = {
         projectName: document.getElementById('filter-project-name')?.value || '',
         maconomyId: document.getElementById('filter-maconomy-id')?.value || '',
+        product: document.getElementById('filter-product')?.value ?? '',
         modelId: document.getElementById('filter-model-id')?.value || '',
         modelType: document.getElementById('filter-model-type')?.value || '',
         complexity: document.getElementById('filter-complexity')?.value || '',
@@ -2093,6 +2107,7 @@ function getFilteredProjects() {
 
         // Column filters
         if (columnFilters.projectName && p.Project_Name !== columnFilters.projectName) return false;
+        if (columnFilters.product && p.Product !== columnFilters.product) return false;
         if (columnFilters.maconomyId && p.Project_No !== columnFilters.maconomyId) return false;
         if (columnFilters.complexity && p.Complexity_Type !== columnFilters.complexity) return false;
         if (columnFilters.startDate && p.Start_Date !== columnFilters.startDate) return false;

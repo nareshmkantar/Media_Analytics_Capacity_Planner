@@ -1134,6 +1134,36 @@ body {
 .cockpit-view {
     display: none;
 }
+.section-title {
+  margin: 12px 0 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.resource-results {
+  margin-top: 20px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.data-table th, .data-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 6px;
+  text-align: left;
+}
+
+.btn-accent {
+  background: var(--gradient-blue);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
 .cockpit-view.active {
     display: block;
